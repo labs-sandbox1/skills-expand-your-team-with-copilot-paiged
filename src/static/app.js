@@ -569,6 +569,15 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-section">
+        <button class="share-button" data-activity="${name}" aria-label="Share this activity">
+          📤 Share
+        </button>
+        <div class="share-panel hidden">
+          <button class="share-option copy-link-button" data-activity="${name}">🔗 Copy Link</button>
+          <a class="share-option email-share-button" href="#" data-activity="${name}">✉️ Email</a>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +595,65 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    // Add share button functionality
+    const shareButton = activityCard.querySelector(".share-button");
+    const sharePanel = activityCard.querySelector(".share-panel");
+    const activityUrl = `${window.location.origin}${window.location.pathname}?activity=${encodeURIComponent(name)}`;
+
+    shareButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const shareText = `Check out this activity at Mergington High School: ${name} - ${details.description}`;
+
+      // Use the Web Share API if available (works well on mobile)
+      if (navigator.share) {
+        navigator.share({
+          title: `${name} — Mergington High School`,
+          text: shareText,
+          url: activityUrl,
+        }).catch(() => {
+          // User cancelled or share failed — do nothing
+        });
+      } else {
+        // Toggle the fallback share panel on desktop
+        sharePanel.classList.toggle("hidden");
+      }
+    });
+
+    // Copy link button
+    const copyLinkButton = activityCard.querySelector(".copy-link-button");
+    copyLinkButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      navigator.clipboard.writeText(activityUrl).then(() => {
+        copyLinkButton.textContent = "✅ Copied!";
+        setTimeout(() => {
+          copyLinkButton.textContent = "🔗 Copy Link";
+        }, 2000);
+      }).catch(() => {
+        copyLinkButton.textContent = "❌ Copy failed";
+        setTimeout(() => {
+          copyLinkButton.textContent = "🔗 Copy Link";
+        }, 2000);
+      });
+    });
+
+    // Email share button
+    const emailShareButton = activityCard.querySelector(".email-share-button");
+    emailShareButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const subject = encodeURIComponent(`Check out: ${name}`);
+      const body = encodeURIComponent(
+        `Hi!\n\nI wanted to share this activity with you:\n\n${name}\n${details.description}\n\nSchedule: ${formatSchedule(details)}\n\nLearn more: ${activityUrl}`
+      );
+      emailShareButton.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    // Close share panel when clicking elsewhere on the page
+    document.addEventListener("click", (event) => {
+      if (!activityCard.contains(event.target)) {
+        sharePanel.classList.add("hidden");
+      }
+    });
 
     activitiesList.appendChild(activityCard);
   }
